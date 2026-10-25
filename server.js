@@ -1,4 +1,58 @@
-'use strict';
+const express = require('express');
+const mp = require('mercadopago'); // Necesitarás instalar esto: npm install mercadopago
+
+const app = express();
+app.use(express.json());
+app.use(express.static('public')); // Para servir tu index.html
+
+// Configura tu ID y Access Token de Mercado Pago (los consigues en developers.mercadopago.com)
+mp.configure({
+  access_token: 'TU_ACCESS_TOKEN_AQUI' 
+});
+
+let users = {
+    'user_001': { balance: 0 }
+};
+
+// 1. Endpoint para crear un pago
+app.post('/api/create-payment', async (req, res) => {
+    const { userId, amount } = req.body;
+    
+    try {
+        let payment_data = {
+            transaction_amount: amount / 100, // Convertir a reales/dólares según corresponda
+            token: 'TU_ACCESS_TOKEN_AQUI',
+            description: 'Depósito Casino Clave',
+            payment_method_id: 'pix', // O 'ticket' para bancos paraguayos
+            issuer_id: 'all',
+            payer: {
+                email: 'usuario@ejemplo.com', // Aquí podrías pedir el email al usuario
+            },
+            external_reference: userId // Usamos esto para saber a quién le llega el dinero
+        };
+
+        let response = await mp.payment.create(payment_data);
+        res.json({ id: response.body.id });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 2. Webhook: Cuando alguien paga, Mercado Pago avisa aquí
+app.post('/webhook', (req, res) => {
+    const paymentId = req.body.data?.id;
+    
+    if (paymentId) {
+        console.log(`Notificación recibida para el pago ${paymentId}`);
+        // Aquí consultarías el estado del pago con la API de MP
+        // Si está 'approved', actualizas el saldo en users[userId].balance += amount;
+    }
+    res.sendStatus(200);
+});
+
+app.listen(3000, () => {
+    console.log('🎰 Casino Clave Backend corriendo...');
+});'use strict';
 const express = require('express');
 const crypto = require('crypto');
 const fs = require('fs');
