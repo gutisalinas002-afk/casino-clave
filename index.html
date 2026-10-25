@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casino Clave</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { noche: '#0B1B4D', azul: '#14307F', marfil: '#F6F2E9', rojo: '#D52B1E' },
+    fontFamily: { display: ['"Bricolage Grotesque"', 'sans-serif'], sans: ['"Instrument Sans"', 'sans-serif'] }
+  } } };
+</script>
+<style>
+  .reel { transition: transform .15s; }
+  .reel.rolling { filter: blur(1.5px); transform: translateY(2px); }
+  dialog::backdrop { background: rgba(5, 12, 38, .75); }
+  :focus-visible { outline: 3px solid #F6F2E9; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .reel { transition: none; } .reel.rolling { filter: none; transform: none; } }
+</style>
+</head>
+<body class="bg-noche text-marfil font-sans min-h-screen flex flex-col">
+
+<header class="flex items-center justify-between gap-3 px-4 sm:px-8 py-4 border-b border-white/15">
+  <a href="/" class="flex items-center gap-2 font-display font-extrabold text-xl sm:text-2xl">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D52B1E" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="12" r="4.5"/><path d="M12.5 12H22M18 12v4M21 12v3"/></svg>
+    Casino Clave
+  </a>
+  <div id="guest" class="flex gap-2">
+    <button data-auth="login" class="px-4 py-2 rounded-lg border border-white/40 hover:bg-white/10">Entrar</button>
+    <button data-auth="register" class="px-4 py-2 rounded-lg bg-rojo font-semibold hover:brightness-110">Crear cuenta</button>
+  </div>
+  <div id="member" class="hidden items-center gap-3">
+    <div class="text-right leading-tight">
+      <div class="text-xs text-white/70" id="who"></div>
+      <div class="font-display font-extrabold text-lg" id="balance">0 Gs</div>
+    </div>
+    <button id="openDep" class="px-4 py-2 rounded-lg bg-rojo font-semibold hover:brightness-110">Depositar</button>
+    <button id="logout" class="px-3 py-2 rounded-lg border border-white/40 hover:bg-white/10">Salir</button>
+  </div>
+</header>
+
+<main class="flex-1 flex items-center justify-center px-4 py-10">
+  <section class="w-full max-w-lg" aria-labelledby="t">
+    <h1 id="t" class="font-display font-extrabold text-4xl sm:text-5xl mb-6">Tragamonedas Clave</h1>
+
+    <div class="bg-azul rounded-2xl p-4 sm:p-6 border-2 border-rojo">
+      <div class="grid grid-cols-3 gap-3" aria-live="off">
+        <div class="reel rounded-xl bg-marfil text-noche grid place-items-center h-28 sm:h-36 text-6xl sm:text-7xl font-display font-extrabold">🔔</div>
+        <div class="reel rounded-xl bg-marfil text-noche grid place-items-center h-28 sm:h-36 text-6xl sm:text-7xl font-display font-extrabold">7</div>
+        <div class="reel rounded-xl bg-marfil text-noche grid place-items-center h-28 sm:h-36 text-6xl sm:text-7xl font-display font-extrabold">⭐</div>
+      </div>
+      <p id="msg" role="status" class="min-h-[3rem] mt-4 text-center text-lg font-semibold"></p>
+
+      <fieldset class="mt-2">
+        <legend class="text-sm text-white/80 mb-2">Apuesta por giro</legend>
+        <div id="bets" class="grid grid-cols-4 gap-2"></div>
+      </fieldset>
+
+      <button id="spin" class="mt-5 w-full py-4 rounded-xl bg-rojo font-display font-extrabold text-2xl hover:brightness-110 disabled:opacity-50">Girar</button>
+    </div>
+
+    <p class="mt-4 text-sm text-white/75">Tres símbolos iguales pagan de ×5 a ×50 tu apuesta. Dos 🍒 devuelven la apuesta.</p>
+  </section>
+</main>
+
+<footer class="px-4 py-5 text-center text-xs text-white/70 border-t border-white/15">
+  Solo para mayores de 18 años. Juega con responsabilidad: apuesta únicamente dinero que puedas permitirte perder.
+</footer>
+
+<dialog id="authDlg" class="rounded-2xl p-6 w-[92vw] max-w-sm bg-marfil text-noche">
+  <form id="authForm" class="space-y-3">
+    <h2 id="authTitle" class="font-display font-extrabold text-2xl"></h2>
+    <label class="block text-sm">Correo
+      <input id="email" type="email" required autocomplete="email" class="mt-1 w-full rounded-lg border border-noche/30 px-3 py-2 bg-white"></label>
+    <label class="block text-sm">Contraseña (mínimo 8 caracteres)
+      <input id="password" type="password" required minlength="8" autocomplete="current-password" class="mt-1 w-full rounded-lg border border-noche/30 px-3 py-2 bg-white"></label>
+    <label id="ageRow" class="hidden items-start gap-2 text-sm"><input id="age" type="checkbox" class="mt-1"> Confirmo que tengo 18 años o más.</label>
+    <p id="authErr" class="text-rojo text-sm min-h-[1.25rem]" role="alert"></p>
+    <div class="flex gap-2">
+      <button type="submit" id="authBtn" class="flex-1 py-2 rounded-lg bg-rojo text-marfil font-semibold"></button>
+      <button type="button" data-close="authDlg" class="px-4 py-2 rounded-lg border border-noche/40">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="depDlg" class="rounded-2xl p-6 w-[92vw] max-w-sm bg-marfil text-noche">
+  <form id="depForm" class="space-y-3">
+    <h2 class="font-display font-extrabold text-2xl">Depositar saldo</h2>
+    <label class="block text-sm">Monto en guaraníes (10.000 a 5.000.000)
+      <input id="amount" type="number" min="10000" max="5000000" step="1000" value="50000" required class="mt-1 w-full rounded-lg border border-noche/30 px-3 py-2 bg-white"></label>
+    <div class="flex gap-2 text-sm">
+      <button type="button" data-amt="20000" class="flex-1 py-1 rounded-lg border border-noche/40">20.000</button>
+      <button type="button" data-amt="50000" class="flex-1 py-1 rounded-lg border border-noche/40">50.000</button>
+      <button type="button" data-amt="100000" class="flex-1 py-1 rounded-lg border border-noche/40">100.000</button>
+    </div>
+    <p id="depErr" class="text-rojo text-sm min-h-[1.25rem]" role="alert"></p>
+    <div class="flex gap-2">
+      <button type="submit" class="flex-1 py-2 rounded-lg bg-rojo text-marfil font-semibold">Pagar con Mercado Pago</button>
+      <button type="button" data-close="depDlg" class="px-4 py-2 rounded-lg border border-noche/40">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs';
+const FACES = ['🍒', '🍋', '🔔', '⭐', '7'];
+const BETS = [1000, 5000, 10000, 50000];
+let token = localStorage.getItem('cc_token'), user = null, bet = BETS[0], mode = 'login', spinning = false;
+
+async function api(path, body) {
+  const r = await fetch('/api/' + path, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { if (r.status === 401 && token) logout(); throw new Error(d.error || 'Ocurrió un error.'); }
+  return d;
+}
+
+function setMsg(t) { $('#msg').textContent = t; }
+
+function render() {
+  $('#guest').classList.toggle('hidden', !!user);
+  $('#member').classList.toggle('hidden', !user);
+  $('#member').classList.toggle('flex', !!user);
+  if (user) { $('#who').textContent = user.email; $('#balance').textContent = fmt(user.balance); }
+  $('#bets').innerHTML = BETS.map((b) =>
+    `<button type="button" data-bet="${b}" aria-pressed="${b === bet}" class="py-2 rounded-lg border text-sm font-semibold ${b === bet ? 'bg-marfil text-noche border-marfil' : 'border-white/40 hover:bg-white/10'}">${new Intl.NumberFormat('es-PY').format(b)}</button>`
+  ).join('');
+}
+
+function logout() { token = null; user = null; localStorage.removeItem('cc_token'); render(); }
+
+function openAuth(m) {
+  mode = m;
+  $('#authTitle').textContent = m === 'login' ? 'Entrar' : 'Crear cuenta';
+  $('#authBtn').textContent = m === 'login' ? 'Entrar' : 'Crear cuenta';
+  $('#ageRow').classList.toggle('hidden', m === 'login');
+  $('#ageRow').classList.toggle('flex', m === 'register');
+  $('#password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  $('#authErr').textContent = '';
+  $('#authDlg').showModal();
+}
+
+async function spin() {
+  if (spinning) return;
+  if (!user) return openAuth('login');
+  if (user.balance < bet) { setMsg('Saldo insuficiente. Deposita para seguir jugando.'); return; }
+  spinning = true; $('#spin').disabled = true; setMsg('');
+  const reels = [...document.querySelectorAll('.reel')];
+  reels.forEach((r) => r.classList.add('rolling'));
+  const t = setInterval(() => reels.forEach((r) => r.textContent = FACES[Math.floor(Math.random() * FACES.length)]), 90);
+  const wait = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900;
+  try {
+    const [d] = await Promise.all([api('spin', { bet }), new Promise((r) => setTimeout(r, wait))]);
+    clearInterval(t);
+    reels.forEach((r, i) => { r.textContent = d.reels[i]; r.classList.remove('rolling'); });
+    user.balance = d.balance; render();
+    setMsg(d.win > 0 ? `Ganaste ${fmt(d.win)}` : 'Sin premio esta vez.');
+  } catch (e) {
+    clearInterval(t); reels.forEach((r) => r.classList.remove('rolling')); setMsg(e.message);
+  }
+  spinning = false; $('#spin').disabled = false;
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-auth],[data-bet],[data-close],[data-amt]');
+  if (!t) return;
+  if (t.dataset.auth) openAuth(t.dataset.auth);
+  if (t.dataset.bet) { bet = +t.dataset.bet; render(); }
+  if (t.dataset.close) $('#' + t.dataset.close).close();
+  if (t.dataset.amt) $('#amount').value = t.dataset.amt;
+});
+
+$('#spin').onclick = spin;
+$('#logout').onclick = logout;
+$('#openDep').onclick = () => { $('#depErr').textContent = ''; $('#depDlg').showModal(); };
+
+$('#authForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const b = { email: $('#email').value, password: $('#password').value };
+  if (mode === 'register') b.mayor18 = $('#age').checked;
+  try {
+    const d = await api(mode, b);
+    token = d.token; user = d.user; localStorage.setItem('cc_token', token);
+    $('#authDlg').close(); render();
+  } catch (err) { $('#authErr').textContent = err.message; }
+};
+
+$('#depForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try { const d = await api('deposit', { amount: +$('#amount').value }); location.href = d.url; }
+  catch (err) { $('#depErr').textContent = err.message; }
+};
+
+// Al volver de Mercado Pago, el saldo se acredita por webhook: consultamos hasta que aparezca.
+async function waitForPayment(before) {
+  setMsg('Confirmando tu pago…');
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    try { user = await api('me'); render(); } catch { return; }
+    if (user.balance > before) return setMsg('Pago acreditado. ¡Buena suerte!');
+  }
+  setMsg('Tu pago aún no se refleja. Puede tardar unos minutos; actualiza la página más tarde.');
+}
+
+(async function init() {
+  render();
+  if (token) { try { user = await api('me'); render(); } catch {} }
+  if (user && /[?&]pago=ok/.test(location.search)) { history.replaceState(null, '', '/'); waitForPayment(user.balance); }
+})();
+</script>
+</body>
+</html>
