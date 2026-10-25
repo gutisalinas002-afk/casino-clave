@@ -1,4 +1,59 @@
-<!doctype html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Casino Clave | Paraguay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col items-center justify-center">
+
+    <div class="w-full max-w-md bg-slate-800 rounded-xl shadow-2xl overflow-hidden border border-slate-700">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-yellow-600 to-yellow-500 p-4 text-center">
+            <h1 class="text-2xl font-black tracking-tighter">CASINO CLAVE 🇵🇾</h1>
+        </div>
+
+        <!-- Balance -->
+        <div class="p-6 text-center border-b border-slate-700">
+            <p class="text-gray-400 text-sm uppercase tracking-wide">Tu Saldo Disponible</p>
+            <p id="saldoDisplay" class="text-4xl font-bold text-green-400 mt-2">Gs 0</p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="p-6 space-y-4">
+            <button onclick="iniciarPago()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all text-white font-bold py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2">
+                <span>💳 Depositar Ahora</span>
+            </button>
+            
+            <p class="text-xs text-center text-gray-500 mt-4">
+                Pagos automáticos vía QR Bancario y Transferencia. <br>
+                Tu saldo se acredita en segundos.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function iniciarPago() {
+            // Simulamos que el usuario logueado es user_001
+            const userId = 'user_001'; 
+            const monto = 100000; // Ejemplo: 100.000 Gs
+
+            fetch('/api/crear-pago', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: userId, amount: monto })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.init_point) {
+                    window.location.href = data.init_point; // Redirige a la pasarela de Mercado Pago
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html><!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
